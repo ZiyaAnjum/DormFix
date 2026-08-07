@@ -98,6 +98,13 @@ router.patch('/:id', async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'No valid fields to update' });
     }
 
+    if (updates.status !== undefined) {
+      const passcode = req.headers['x-admin-passcode'];
+      if (!passcode || passcode !== process.env.ADMIN_PASSCODE) {
+        return res.status(401).json({ success: false, message: 'Unauthorized: Invalid admin passcode' });
+      }
+    }
+
     const query = id.startsWith('HC-') ? { ticketId: id } : { _id: id };
     const complaint = await Complaint.findOneAndUpdate(query, updates, {
       new: true,

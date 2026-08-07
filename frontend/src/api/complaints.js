@@ -53,3 +53,15 @@ export async function upvoteComplaint(id, currentUpvotes) {
   });
   return handleResponse(response);
 }
+
+export async function updateComplaintStatus(id, newStatus, passcode) {
+  const response = await fetch(`${API_BASE}/api/complaints/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Passcode': passcode,
+    },
+    body: JSON.stringify({ status: newStatus }),
+  });
+  return handleResponse(response);
+}
