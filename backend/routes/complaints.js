@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { Complaint, CATEGORIES, STATUSES } from '../models/Complaint.js';
 import { getNextTicketId } from '../models/Counter.js';
+import { escalateOverdueComplaints } from '../utils/escalation.js';
 
 const router = Router();
 
 // GET /api/complaints — list with optional filters
 router.get('/', async (req, res, next) => {
   try {
+    await escalateOverdueComplaints();
     const { status, category, search } = req.query;
     const filter = {};
 
@@ -31,6 +33,7 @@ router.get('/meta', (_req, res) => {
 // GET /api/complaints/:id — single complaint by MongoDB _id or ticketId
 router.get('/:id', async (req, res, next) => {
   try {
+    await escalateOverdueComplaints();
     const { id } = req.params;
     const query = id.startsWith('HC-') ? { ticketId: id } : { _id: id };
 
