@@ -100,7 +100,11 @@ export default function App() {
               onError={(message) => setToast({ message, type: 'error' })}
             />
           ) : (
-            <ComplaintList refreshTrigger={refreshTrigger} />
+            <ComplaintList
+              refreshTrigger={refreshTrigger}
+              onSuccess={(message) => setToast({ message, type: 'success' })}
+              onError={(message) => setToast({ message, type: 'error' })}
+            />
           )}
         </>
       )}

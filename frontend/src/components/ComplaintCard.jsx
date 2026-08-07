@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { submitComplaintFeedback } from '../api/complaints';
 
 const STATUS_CONFIG = {
   'open': {
@@ -27,7 +28,7 @@ const STATUS_CONFIG = {
   }
 };
 
-export default function ComplaintCard({ complaint, onUpvote }) {
+export default function ComplaintCard({ complaint, onUpvote, onSuccess, onError }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [upvoting, setUpvoting] = useState(false);
@@ -45,6 +46,16 @@ export default function ComplaintCard({ complaint, onUpvote }) {
     feedback,
     createdAt
   } = complaint;
+
+  const [localFeedback, setLocalFeedback] = useState(feedback);
+  const [ratingInput, setRatingInput] = useState(5);
+  const [commentInput, setCommentInput] = useState('');
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [feedbackError, setFeedbackError] = useState('');
+
+  useEffect(() => {
+    setLocalFeedback(feedback);
+  }, [feedback]);
 
   const config = STATUS_CONFIG[status] || STATUS_CONFIG['open'];
 
@@ -66,6 +77,28 @@ export default function ComplaintCard({ complaint, onUpvote }) {
       console.error('Failed to upvote:', err);
     } finally {
       setUpvoting(false);
+    }
+  }
+
+  async function handleFeedbackSubmit(e) {
+    e.preventDefault();
+    if (submittingFeedback) return;
+    setSubmittingFeedback(true);
+    setFeedbackError('');
+    try {
+      const res = await submitComplaintFeedback(_id, {
+        rating: ratingInput,
+        comment: commentInput.trim(),
+      });
+      if (res.success) {
+        setLocalFeedback(res.data.feedback);
+        onSuccess?.('Feedback submitted! Thank you.');
+      }
+    } catch (err) {
+      setFeedbackError(err.message || 'Failed to submit feedback.');
+      onError?.(err.message || 'Failed to submit feedback.');
+    } finally {
+      setSubmittingFeedback(false);
     }
   }
 
@@ -148,22 +181,65 @@ export default function ComplaintCard({ complaint, onUpvote }) {
           )}
 
           {/* Feedback & Star Rating Section (only if resolved) */}
-          {status === 'resolved' && feedback && (
-            <div className="mt-3 rounded-lg bg-[#3D9B6B]/10 p-3 border border-[#3D9B6B]/20">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-[#3D9B6B]">User Feedback</span>
-                <div className="flex text-amber-500 text-xs">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <span key={i}>{i < feedback.rating ? '★' : '☆'}</span>
-                  ))}
+          {status === 'resolved' && (
+            localFeedback ? (
+              <div className="mt-3 rounded-lg bg-[#3D9B6B]/10 p-3 border border-[#3D9B6B]/20">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-[#3D9B6B]">User Feedback</span>
+                  <div className="flex text-[#E08E2B] text-xs">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <span key={i}>{i < localFeedback.rating ? '★' : '☆'}</span>
+                    ))}
+                  </div>
                 </div>
+                {localFeedback.comment && (
+                  <p className="mt-1 text-xs italic text-[#1F2430] break-words">
+                    "{localFeedback.comment}"
+                  </p>
+                )}
               </div>
-              {feedback.comment && (
-                <p className="mt-1 text-xs italic text-[#1F2430] break-words">
-                  "{feedback.comment}"
-                </p>
-              )}
-            </div>
+            ) : (
+              <form onSubmit={handleFeedbackSubmit} className="mt-3 rounded-lg bg-[#F7F7F5] p-3 border border-[#E4E4E0] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-[#1F2430]">Rate Experience</span>
+                  <div className="flex items-center space-x-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setRatingInput(star)}
+                        className="text-lg focus:outline-none transition-transform active:scale-125 hover:scale-110"
+                        style={{ color: star <= ratingInput ? '#E08E2B' : '#D8D8D3' }}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <textarea
+                    placeholder="Leave a comment (optional)..."
+                    value={commentInput}
+                    onChange={(e) => setCommentInput(e.target.value)}
+                    maxLength={500}
+                    rows={2}
+                    className="w-full rounded-md border border-[#D8D8D3] bg-white p-2 text-xs outline-none transition focus:border-[#2F6F5E] resize-none"
+                  />
+                </div>
+                {feedbackError && (
+                  <p className="text-[10px] font-semibold text-[#D9473D]">{feedbackError}</p>
+                )}
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={submittingFeedback}
+                    className="rounded bg-[#2F6F5E] px-3 py-1 text-xs font-semibold text-white transition hover:bg-[#265949] disabled:opacity-50"
+                  >
+                    {submittingFeedback ? 'Submitting...' : 'Submit Feedback'}
+                  </button>
+                </div>
+              </form>
+            )
           )}
 
           {/* Bottom Actions */}

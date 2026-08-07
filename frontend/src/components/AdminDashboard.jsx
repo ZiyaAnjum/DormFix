@@ -152,6 +152,45 @@ export default function AdminDashboard({ onError, onSuccess }) {
         </button>
       </div>
 
+      {/* Metrics Row */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="rounded-2xl border border-[#E4E4E0] bg-white p-5 shadow-sm">
+          <span className="block text-xs font-semibold text-[#5C6478] uppercase tracking-wider">Total Tickets</span>
+          <span className="mt-2 block font-heading text-3xl font-bold text-[#1F2430]">{complaints.length}</span>
+        </div>
+        <div className="rounded-2xl border border-[#E4E4E0] bg-white p-5 shadow-sm">
+          <span className="block text-xs font-semibold text-[#5C6478] uppercase tracking-wider">Pending Action</span>
+          <span className="mt-2 block font-heading text-3xl font-bold text-[#E08E2B]">
+            {complaints.filter((c) => ['open', 'in-progress'].includes(c.status)).length}
+          </span>
+        </div>
+        <div className="rounded-2xl border border-[#E4E4E0] bg-white p-5 shadow-sm">
+          <span className="block text-xs font-semibold text-[#5C6478] uppercase tracking-wider">Escalated</span>
+          <span className="mt-2 block font-heading text-3xl font-bold text-[#D9473D]">
+            {complaints.filter((c) => c.status === 'escalated').length}
+          </span>
+        </div>
+        <div className="rounded-2xl border border-[#E4E4E0] bg-white p-5 shadow-sm">
+          <span className="block text-xs font-semibold text-[#5C6478] uppercase tracking-wider">Avg Rating</span>
+          <div className="mt-2 flex items-baseline space-x-2">
+            <span className="block font-heading text-3xl font-bold text-[#2F6F5E]">
+              {(() => {
+                const rated = complaints.filter((c) => c.status === 'resolved' && c.feedback?.rating);
+                return rated.length
+                  ? `${(rated.reduce((sum, c) => sum + c.feedback.rating, 0) / rated.length).toFixed(1)} ★`
+                  : 'N/A';
+              })()}
+            </span>
+            <span className="text-xs font-medium text-[#5C6478]">
+              {(() => {
+                const ratedCount = complaints.filter((c) => c.status === 'resolved' && c.feedback?.rating).length;
+                return ratedCount > 0 ? `(${ratedCount} feedback)` : '';
+              })()}
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Filter and Search Box */}
       <div className="rounded-2xl border border-[#E4E4E0] bg-white p-5 shadow-sm space-y-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -246,6 +285,20 @@ export default function AdminDashboard({ onError, onSuccess }) {
                     <td className="px-6 py-4 max-w-sm">
                       <div className="font-semibold text-[#1F2430] truncate">{c.title}</div>
                       <div className="text-xs text-[#5C6478] line-clamp-2 mt-0.5">{c.description}</div>
+                      {c.status === 'resolved' && c.feedback && (
+                        <div className="mt-1.5 flex items-center space-x-2 bg-[#3D9B6B]/5 border border-[#3D9B6B]/10 rounded px-2 py-1 max-w-max">
+                          <span className="text-[#E08E2B] text-xs font-bold font-mono">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              i < c.feedback.rating ? '★' : '☆'
+                            ))}
+                          </span>
+                          {c.feedback.comment && (
+                            <span className="text-[10px] text-[#1F2430] italic truncate max-w-[150px]">
+                              "{c.feedback.comment}"
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-[#5C6478] whitespace-nowrap">
                       {c.location}

@@ -5,7 +5,7 @@ import ComplaintCard from './ComplaintCard';
 
 const STATUS_OPTIONS = ['open', 'in-progress', 'resolved', 'escalated'];
 
-export default function ComplaintList({ refreshTrigger }) {
+export default function ComplaintList({ refreshTrigger, onSuccess, onError }) {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -55,9 +55,11 @@ export default function ComplaintList({ refreshTrigger }) {
         setComplaints((prev) =>
           prev.map((c) => (c._id === id ? { ...c, upvotes: updated.data.upvotes } : c))
         );
+        onSuccess?.('Upvoted successfully!');
       }
     } catch (err) {
       console.error(err);
+      onError?.(err.message || 'Failed to upvote.');
     }
   }
 
@@ -181,6 +183,8 @@ export default function ComplaintList({ refreshTrigger }) {
               key={complaint._id}
               complaint={complaint}
               onUpvote={handleUpvote}
+              onSuccess={onSuccess}
+              onError={onError}
             />
           ))}
         </div>

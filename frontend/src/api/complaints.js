@@ -65,3 +65,15 @@ export async function updateComplaintStatus(id, newStatus, passcode) {
   });
   return handleResponse(response);
 }
+
+export async function submitComplaintFeedback(id, feedback) {
+  const response = await fetch(`${API_BASE}/api/complaints/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ feedback }),
+  });
+  return handleResponse(response);
+}
+
