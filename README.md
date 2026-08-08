@@ -30,11 +30,11 @@ Digital complaint tracking that turns hostel maintenance into a transparent, tra
 *Student-facing complaint ledger — search, filter, and browse tickets*
 
 **File Complaint**
-![File Complaint form](./screenshots/file-complaint-1.png)
+![File Complaint form](./screenshots/file-complaint.png)
 *Submission form with voice-to-text input (English/Hindi) and photo upload*
 
 **Admin Dashboard**
-![Admin Dashboard](./screenshots/admin-dashboard-1.png)
+![Admin Dashboard](./screenshots/admin-dashboard.png)
 *Complaints Ledger Console — live stats and full status control*
 
 
