@@ -30,7 +30,8 @@ const STATUS_CONFIG = {
 
 export default function ComplaintCard({ complaint, onUpvote, onSuccess, onError }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [showModal, setShowModal] = useState(false);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [upvoting, setUpvoting] = useState(false);
 
   const {
@@ -107,10 +108,22 @@ export default function ComplaintCard({ complaint, onUpvote, onSuccess, onError 
     ? description
     : `${description.substring(0, 180)}...`;
 
+  const openDetails = () => setShowDetails(true);
+  const closeDetails = () => setShowDetails(false);
+
   return (
     <>
       <article
-        className="relative overflow-hidden rounded-xl border border-[#E4E4E0] bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md focus-within:ring-2 focus-within:ring-[#2F6F5E]/20"
+        tabIndex={0}
+        role="button"
+        onClick={openDetails}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openDetails();
+          }
+        }}
+        className="relative overflow-hidden rounded-xl border border-[#E4E4E0] bg-white p-5 shadow-sm transition-all duration-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#2F6F5E]/20 cursor-pointer"
         style={{ borderLeftWidth: '6px', borderLeftColor: config.color }}
       >
         {/* Stamp Badge */}
@@ -155,7 +168,10 @@ export default function ComplaintCard({ complaint, onUpvote, onSuccess, onError 
               {displayDescription}
               {needsTruncation && (
                 <button
-                  onClick={() => setIsExpanded(!isExpanded)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsExpanded(!isExpanded);
+                  }}
                   className="ml-1 font-semibold text-[#2F6F5E] hover:underline focus:outline-none"
                 >
                   {isExpanded ? 'Show less' : 'Read more'}
@@ -166,7 +182,13 @@ export default function ComplaintCard({ complaint, onUpvote, onSuccess, onError 
 
           {/* Optional Photo Attachment */}
           {photoUrl && (
-            <div className="relative mt-2 max-h-40 overflow-hidden rounded-lg border border-[#E4E4E0] cursor-pointer" onClick={() => setShowModal(true)}>
+            <div
+              className="relative mt-2 max-h-40 overflow-hidden rounded-lg border border-[#E4E4E0] cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowPhotoModal(true);
+              }}
+            >
               <img
                 src={photoUrl}
                 alt={`Complaint ${ticketId}`}
@@ -199,15 +221,22 @@ export default function ComplaintCard({ complaint, onUpvote, onSuccess, onError 
                 )}
               </div>
             ) : (
-              <form onSubmit={handleFeedbackSubmit} className="mt-3 rounded-lg bg-[#F7F7F5] p-3 border border-[#E4E4E0] space-y-3">
-                <div className="flex items-center justify-between">
+              <form
+              onSubmit={handleFeedbackSubmit}
+              onClick={(e) => e.stopPropagation()}
+              className="mt-3 rounded-lg bg-[#F7F7F5] p-3 border border-[#E4E4E0] space-y-3"
+            >
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-[#1F2430]">Rate Experience</span>
                   <div className="flex items-center space-x-1">
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
                         type="button"
-                        onClick={() => setRatingInput(star)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRatingInput(star);
+                        }}
                         className="text-lg focus:outline-none transition-transform active:scale-125 hover:scale-110"
                         style={{ color: star <= ratingInput ? '#E08E2B' : '#D8D8D3' }}
                       >
@@ -247,7 +276,7 @@ export default function ComplaintCard({ complaint, onUpvote, onSuccess, onError 
             <button
               onClick={handleUpvote}
               disabled={upvoting}
-              className="inline-flex items-center space-x-2 rounded-lg border border-[#D8D8D3] bg-white px-3 py-1.5 text-xs font-medium text-[#1F2430] transition hover:bg-[#F7F7F5] focus:outline-none focus:ring-2 focus:ring-[#2F6F5E]/20 disabled:opacity-50"
+              className="inline-flex min-h-[44px] items-center space-x-2 rounded-lg border border-[#D8D8D3] bg-white px-3 py-2 text-xs font-medium text-[#1F2430] transition hover:bg-[#F7F7F5] focus:outline-none focus:ring-2 focus:ring-[#2F6F5E]/20 disabled:opacity-50"
             >
               <span>▲</span>
               <span>Upvote ({upvotes})</span>
@@ -257,10 +286,10 @@ export default function ComplaintCard({ complaint, onUpvote, onSuccess, onError 
       </article>
 
       {/* Photo Lightbox Modal */}
-      {showModal && (
+      {showPhotoModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
-          onClick={() => setShowModal(false)}
+          onClick={() => setShowPhotoModal(false)}
         >
           <div
             className="relative max-w-3xl w-full bg-white rounded-2xl overflow-hidden shadow-2xl"
@@ -269,13 +298,82 @@ export default function ComplaintCard({ complaint, onUpvote, onSuccess, onError 
             <div className="p-4 flex items-center justify-between border-b border-[#E4E4E0]">
               <span className="font-mono text-sm font-semibold">{ticketId} Attachment</span>
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => setShowPhotoModal(false)}
                 className="text-gray-500 hover:text-gray-700 text-xl font-bold px-2 focus:outline-none"
               >
                 &times;
               </button>
             </div>
             <img src={photoUrl} alt={`Full attachment for ${ticketId}`} className="w-full max-h-[70vh] object-contain bg-black animate-[fadeIn_0.2s_ease-out]" />
+          </div>
+        </div>
+      )}
+
+      {showDetails && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm"
+          onClick={closeDetails}
+        >
+          <div
+            className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-white p-6 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxHeight: 'calc(100vh - 2rem)' }}
+          >
+            <div className="flex items-start justify-between gap-4 pb-4 sm:pb-5 border-b border-[#E4E4E0]">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2F6F5E]">Complaint details</p>
+                <h2 className="mt-2 text-2xl font-bold text-[#1F2430]">{title}</h2>
+                <p className="mt-1 text-sm text-[#5C6478]">{ticketId} • {formattedDate}</p>
+              </div>
+              <button
+                type="button"
+                onClick={closeDetails}
+                className="rounded-full bg-[#F7F7F5] p-2 text-[#1F2430] transition hover:bg-[#E4E4E0] focus:outline-none"
+                aria-label="Close complaint details"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-4 text-sm text-[#5C6478]">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-[#E4E4E0] bg-[#F7F7F5] p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-[#5C6478]">Category</p>
+                  <p className="mt-2 font-semibold text-[#1F2430]">{category}</p>
+                </div>
+                <div className="rounded-2xl border border-[#E4E4E0] bg-[#F7F7F5] p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-[#5C6478]">Location</p>
+                  <p className="mt-2 font-semibold text-[#1F2430]">{location}</p>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-[#E4E4E0] bg-[#F7F7F5] p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-[#5C6478]">Description</p>
+                <p className="mt-2 whitespace-pre-line text-[#1F2430]">{description}</p>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="rounded-full bg-[#F7F7F5] px-3 py-2 text-xs font-semibold text-[#5C6478] border border-[#E4E4E0]">Status: {status}</span>
+                <span className="rounded-full bg-[#F7F7F5] px-3 py-2 text-xs font-semibold text-[#5C6478] border border-[#E4E4E0]">Upvotes: {upvotes}</span>
+              </div>
+              {photoUrl && (
+                <div className="overflow-hidden rounded-2xl border border-[#E4E4E0] bg-black/5">
+                  <img src={photoUrl} alt={`Complaint attachment for ${ticketId}`} className="w-full max-h-[42vh] object-cover" />
+                </div>
+              )}
+              {status === 'resolved' && localFeedback && (
+                <div className="rounded-2xl border border-[#3D9B6B]/20 bg-[#3D9B6B]/10 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-[#3D9B6B]">Resolved feedback</p>
+                  <div className="mt-2 flex items-center gap-2 text-sm">
+                    <span className="font-semibold text-[#1F2430]">Rating:</span>
+                    <span className="text-[#E08E2B]">
+                      {Array.from({ length: 5 }).map((_, i) => (i < localFeedback.rating ? '★' : '☆'))}
+                    </span>
+                  </div>
+                  {localFeedback.comment && (
+                    <p className="mt-2 text-sm italic text-[#1F2430]">"{localFeedback.comment}"</p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

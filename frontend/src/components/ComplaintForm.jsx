@@ -11,19 +11,164 @@ function FieldError({ id, message }) {
   );
 }
 
-export default function ComplaintForm({ onSuccess, onError }) {
+export default function ComplaintForm({ onSuccess, onNotify, onError }) {
   const [form, setForm] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState({});
   const [previewUrl, setPreviewUrl] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submittedTicket, setSubmittedTicket] = useState(null);
   const fileInputRef = useRef(null);
+  const [isListening, setIsListening] = useState(false);
+  const [speechLang, setSpeechLang] = useState('en-US');
+  const [supportsSpeech, setSupportsSpeech] = useState(true);
+  const [speechMessage, setSpeechMessage] = useState('Press Speak and allow microphone access.');
+  const recognitionRef = useRef(null);
 
   useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
   }, [previewUrl]);
+
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setSupportsSpeech(false);
+      setSpeechMessage('Voice input is not supported in this browser.');
+      return undefined;
+    }
+
+    setSupportsSpeech(true);
+    setSpeechMessage('Voice input is ready. Press Speak to start.');
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = speechLang;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      console.log('SpeechRecognition started');
+      setSpeechMessage('Listening... please speak now.');
+    };
+
+    recognition.onaudiostart = () => {
+      console.log('SpeechRecognition audio started');
+      setSpeechMessage('Microphone is active. Speak now.');
+    };
+
+    recognition.onspeechstart = () => {
+      console.log('SpeechRecognition speech started');
+      setSpeechMessage('Speech detected. Processing...');
+    };
+
+    recognition.onresult = (event) => {
+      console.log('SpeechRecognition result', event);
+      const transcript = Array.from(event.results)
+        .slice(event.resultIndex)
+        .map((result) => result[0].transcript)
+        .join('');
+
+      setForm((prev) => {
+        const currentDesc = prev.description ? prev.description.trim() : '';
+        const space = currentDesc ? ' ' : '';
+        return {
+          ...prev,
+          description: currentDesc + space + transcript,
+        };
+      });
+      setErrors((prev) => ({ ...prev, description: undefined }));
+      setSpeechMessage('Voice input captured.');
+    };
+
+    recognition.onnomatch = () => {
+      console.log('SpeechRecognition no match');
+      setSpeechMessage('No speech detected. Try again.');
+    };
+
+    recognition.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      setIsListening(false);
+      setSpeechMessage(`Voice input error: ${event.error}`);
+      onError?.(`Voice input error: ${event.error}`);
+    };
+
+    recognition.onend = () => {
+      console.log('SpeechRecognition ended');
+      setIsListening(false);
+      setSpeechMessage('Voice input stopped.');
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (err) {
+          console.warn('Failed to stop recognition on cleanup', err);
+        }
+      }
+    };
+  }, [onError, speechLang]);
+
+  useEffect(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.lang = speechLang;
+    }
+  }, [speechLang]);
+
+  async function checkMicrophonePermission() {
+    if (!navigator.permissions || !navigator.permissions.query) return null;
+    try {
+      const status = await navigator.permissions.query({ name: 'microphone' });
+      console.log('Microphone permission state:', status.state);
+      return status.state;
+    } catch (err) {
+      console.warn('Could not query microphone permission:', err);
+      return null;
+    }
+  }
+
+  async function toggleSpeech() {
+    if (!recognitionRef.current) {
+      setSupportsSpeech(false);
+      setSpeechMessage('Voice input is not supported in this browser.');
+      onError?.('Voice input is not supported in this browser.');
+      return;
+    }
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+      setSpeechMessage('Voice input stopped.');
+      onNotify?.('Voice input stopped.');
+      return;
+    }
+
+    const permissionState = await checkMicrophonePermission();
+    if (permissionState === 'denied') {
+      setSpeechMessage('Microphone access is denied. Please allow microphone access in your browser settings.');
+      onError?.('Microphone access is denied. Please allow microphone access in your browser settings.');
+      return;
+    }
+
+    try {
+      recognitionRef.current.lang = speechLang;
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.maxAlternatives = 1;
+      recognitionRef.current.start();
+      setIsListening(true);
+      setSpeechMessage(`Listening in ${speechLang === 'en-US' ? 'English' : 'Hindi'}...`);
+      onNotify?.(`Listening in ${speechLang === 'en-US' ? 'English' : 'Hindi'}...`);
+    } catch (err) {
+      console.error('Failed to start speech recognition:', err);
+      const message = err?.message || 'Could not start microphone. Please check permissions.';
+      setSpeechMessage(message);
+      onError?.(`Could not start microphone. ${message}`);
+    }
+  }
 
   function updateField(name, value) {
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -168,9 +313,38 @@ export default function ComplaintForm({ onSuccess, onError }) {
         </div>
 
         <div>
-          <label htmlFor="description" className="block text-sm font-medium">
-            Description
-          </label>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <label htmlFor="description" className="block text-sm font-medium">
+              Description
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-[#5C6478]">Voice Input:</span>
+              <button
+                type="button"
+                onClick={() => setSpeechLang(speechLang === 'en-US' ? 'hi-IN' : 'en-US')}
+                disabled={!supportsSpeech}
+                className="rounded bg-[#F7F7F5] border border-[#D8D8D3] px-3 py-2 text-xs font-semibold text-[#1F2430] hover:bg-[#E4E4E0] transition focus:outline-none focus:ring-2 focus:ring-[#2F6F5E]/20 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {speechLang === 'en-US' ? '🇬🇧 English' : '🇮🇳 Hindi'}
+              </button>
+              <button
+                type="button"
+                onClick={toggleSpeech}
+                disabled={!supportsSpeech}
+                className={`flex min-h-[44px] items-center space-x-1 rounded-lg px-3 py-2 text-xs font-semibold border transition focus:outline-none focus:ring-2 focus:ring-[#2F6F5E]/20 ${
+                  !supportsSpeech
+                    ? 'bg-[#F7F7F5] text-[#9CA3AF] border-[#D1D5DB] cursor-not-allowed'
+                    : isListening
+                      ? 'bg-[#D9473D]/10 text-[#D9473D] border-[#D9473D] animate-pulse'
+                      : 'bg-[#2F6F5E]/10 text-[#2F6F5E] border-[#2F6F5E]/20 hover:bg-[#2F6F5E]/20'
+                }`}
+              >
+                <span>🎙️</span>
+                <span>{isListening ? 'Stop' : supportsSpeech ? 'Speak' : 'Unavailable'}</span>
+              </button>
+            </div>
+          </div>
+          <p className="mt-2 text-xs text-[#5C6478]">{speechMessage}</p>
           <textarea
             id="description"
             name="description"

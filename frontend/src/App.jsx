@@ -97,6 +97,7 @@ export default function App() {
           {activeTab === 'form' ? (
             <ComplaintForm
               onSuccess={handleSubmissionSuccess}
+              onNotify={(message) => setToast({ message, type: 'success' })}
               onError={(message) => setToast({ message, type: 'error' })}
             />
           ) : (
