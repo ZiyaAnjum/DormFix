@@ -12,14 +12,19 @@ import { escalateOverdueComplaints } from './utils/escalation.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const allowedOrigins = [
+const allowedOrigins = Array.from(new Set([
   'http://localhost:5173',
+  'https://dorm-fix-tau.vercel.app',
   process.env.FRONTEND_URL,
-].filter(Boolean);
+].filter(Boolean)));
+const vercelPreviewRegex = /\.vercel\.app$/i;
+
+console.log('Allowed CORS origins:', allowedOrigins.join(', ') || '(none)');
+console.log('Allowed CORS wildcard:', '*.vercel.app');
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin) || vercelPreviewRegex.test(origin)) {
       callback(null, true);
     } else {
       callback(new Error(`CORS policy: origin ${origin} not allowed`));
