@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchComplaints, updateComplaintStatus } from '../api/complaints';
 import { CATEGORIES } from '../utils/validation';
+import ComplaintDetailsModal from './ComplaintDetailsModal';
 
 const STATUS_OPTIONS = ['open', 'in-progress', 'resolved', 'escalated'];
 
@@ -19,6 +20,7 @@ export default function AdminDashboard({ onError, onSuccess }) {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [selectedComplaintId, setSelectedComplaintId] = useState(null);
 
   // Filters State
   const [search, setSearch] = useState('');
@@ -56,6 +58,14 @@ export default function AdminDashboard({ onError, onSuccess }) {
     loadComplaints();
   }, [loadComplaints]);
 
+  useEffect(() => {
+    if (!isAuthenticated) return undefined;
+    const interval = setInterval(loadComplaints, 15000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, loadComplaints]);
+
+  const selectedComplaint = complaints.find((c) => c._id === selectedComplaintId);
+
   function handleLogin(e) {
     e.preventDefault();
     if (!passcodeInput.trim()) return;
@@ -71,6 +81,7 @@ export default function AdminDashboard({ onError, onSuccess }) {
     setPasscode('');
     setIsAuthenticated(false);
     setComplaints([]);
+    setSelectedComplaintId(null);
     setPasscodeInput('');
   }
 
@@ -273,12 +284,17 @@ export default function AdminDashboard({ onError, onSuccess }) {
                   <th className="px-6 py-4">Complaint details</th>
                   <th className="px-6 py-4">Location</th>
                   <th className="px-6 py-4">Category</th>
+                  <th className="px-6 py-4">Upvotes</th>
                   <th className="px-6 py-4">Status control</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E4E4E0]">
                 {complaints.map((c) => (
-                  <tr key={c._id} className="hover:bg-[#F7F7F5]/50 transition-colors">
+                  <tr
+                    key={c._id}
+                    className="hover:bg-[#F7F7F5]/50 transition-colors cursor-pointer"
+                    onClick={() => setSelectedComplaintId(c._id)}
+                  >
                     <td className="px-6 py-4 font-mono font-bold text-[#1F2430] whitespace-nowrap">
                       {c.ticketId}
                     </td>
@@ -308,9 +324,11 @@ export default function AdminDashboard({ onError, onSuccess }) {
                         {c.category}
                       </span>
                     </td>
+                    <td className="px-6 py-4 text-[#5C6478] whitespace-nowrap">{c.upvotes ?? 0}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <select
                         value={c.status}
+                        onClick={(e) => e.stopPropagation()}
                         onChange={(e) => handleStatusChange(c._id, e.target.value)}
                         className={`rounded-lg border px-3 py-1.5 text-xs font-bold uppercase tracking-wider outline-none transition focus:ring-2 focus:ring-[#2F6F5E]/20 ${
                           STATUS_STYLES[c.status] || STATUS_STYLES['open']
@@ -329,6 +347,14 @@ export default function AdminDashboard({ onError, onSuccess }) {
             </table>
           </div>
         </div>
+      )}
+      {selectedComplaint && (
+        <ComplaintDetailsModal
+          complaint={selectedComplaint}
+          onClose={() => setSelectedComplaintId(null)}
+          isAdmin
+          onStatusChange={handleStatusChange}
+        />
       )}
     </div>
   );
