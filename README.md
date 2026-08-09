@@ -177,9 +177,9 @@ DORMFIX/
 
 ## 🧗 Challenges I Faced
 
-**Voice-to-text not working** — The Web Speech API integration for the voice-to-text submission (with English/Hindi toggle) wasn't picking up any input no matter what got changed — permissions, browser compatibility, language configs. After a lot of back and forth, it turned out to be my laptop's microphone hardware not functioning at all, not a code issue. Good reminder to rule out hardware/environment early instead of assuming the bug is always in the logic.
-
 **MongoDB Atlas connection failures** — The backend couldn't connect to the MongoDB cluster at all — kept failing silently with no clear error. Turned out to be a network access + DNS issue: the cluster's IP access list didn't include my current network, and local DNS resolution was flaky. Fixing the IP access list to `0.0.0.0/0` (allow from anywhere) and switching DNS to `8.8.8.8` resolved it.
+
+**CORS blocking production requests** — The live site suddenly started throwing "Failed to fetch" errors, even though everything worked locally. Backend logs on Render showed the actual cause: `Error: CORS policy: origin https://dorm-fix-tau.vercel.app not allowed`. The CORS origin check was too strict and wasn't correctly picking up the deployed frontend URL. Fixed it by updating the allowed-origins list in the backend and setting the `FRONTEND_URL` environment variable correctly on Render.
 
 ## 🔧 What I'd Improve
 

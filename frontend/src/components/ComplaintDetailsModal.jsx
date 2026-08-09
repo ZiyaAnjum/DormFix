@@ -32,11 +32,11 @@ export default function ComplaintDetailsModal({ complaint, onClose, onStatusChan
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-2xl overflow-hidden rounded-3xl bg-white p-6 shadow-2xl"
+        className="relative w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl flex flex-col"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxHeight: 'calc(100vh - 2rem)' }}
+        style={{ maxHeight: '90vh' }}
       >
-        <div className="flex items-start justify-between gap-4 pb-4 sm:pb-5 border-b border-[#E4E4E0]">
+        <div className="flex-shrink-0 flex items-start justify-between gap-4 pb-4 sm:pb-5 border-b border-[#E4E4E0]">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2F6F5E]">Complaint details</p>
             <h2 className="mt-2 text-2xl font-bold text-[#1F2430]">{title}</h2>
@@ -52,7 +52,7 @@ export default function ComplaintDetailsModal({ complaint, onClose, onStatusChan
           </button>
         </div>
 
-        <div className="mt-5 space-y-4 text-sm text-[#5C6478]">
+        <div className="mt-5 space-y-4 text-sm text-[#5C6478] overflow-y-auto flex-1 min-h-0">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl border border-[#E4E4E0] bg-[#F7F7F5] p-4">
               <p className="text-xs uppercase tracking-[0.2em] text-[#5C6478]">Category</p>
