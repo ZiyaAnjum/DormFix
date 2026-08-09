@@ -118,6 +118,7 @@ export default function ComplaintCard({ complaint, onUpvote, onSuccess, onError 
         role="button"
         onClick={openDetails}
         onKeyDown={(e) => {
+          if (e.target !== e.currentTarget) return;
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             openDetails();
